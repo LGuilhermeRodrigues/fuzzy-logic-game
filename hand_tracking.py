@@ -30,7 +30,6 @@ def main():
     # COLOR PICKER
     global image_hsv, pixel, image_src, upper,lower # so we can use it in mouse callback
 
-    image_src = cv2.imread("color_picker.jpg")  # pick.py my.png
     ret, image_src = cap.read()
     cv2.imshow("bgr", image_src)
     cv2.setMouseCallback('bgr', pick_color)
