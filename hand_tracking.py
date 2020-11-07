@@ -49,11 +49,9 @@ def show_mask(roi):
 
 
 def draw_game(frame, start_x, start_y, num_pixels, player_pos):
-
-
     player_x, player_y = player_pos
     border = 40
-    interval_x = start_x+border, start_x+num_pixels-border
+    interval_x = start_x + border, start_x + num_pixels - border
     interval_y = start_y + border, start_y + num_pixels - border
     game_x = random.randint(interval_x[0], interval_x[1])
     game_y = random.randint(interval_y[0], interval_y[1])
@@ -62,14 +60,14 @@ def draw_game(frame, start_x, start_y, num_pixels, player_pos):
         game_x = random.randint(interval_x[0], interval_x[1])
         game_y = random.randint(interval_y[0], interval_y[1])
 
-    print('teste ',game_x,',',game_y)
+    print('teste ', game_x, ',', game_y)
 
     # cv2.rectangle(frame, (start_x+border, start_y + border), (start_x+num_pixels-border, start_y + num_pixels - border), (255, 10, 10), 0)
     return game_x, game_y
 
 
 def computer_distance(player_x, player_y, coin_x, coin_y):
-    distance = math.sqrt(((player_x-coin_x)**2)+((player_y-coin_y)**2))
+    distance = math.sqrt(((player_x - coin_x) ** 2) + ((player_y - coin_y) ** 2))
     return distance
 
 
@@ -77,6 +75,8 @@ def main():
     cap = cv2.VideoCapture(0)
     global pixel, image_src, upper, lower  # so we can use it in mouse callback
     frame_number = 0
+    seconds = 0
+    start_button = (int(640 / 2) - 20, int(480 / 2)-40)
     ret, frame = cap.read()
     cv2.imshow('frame', frame)
     coin_pos = (None, None)
@@ -86,34 +86,53 @@ def main():
         image_src = frame
 
         # define region of interest
-        roi = frame[40:480-40, 120:640-120]
+        roi = frame[40:480 - 40, 120:640 - 120]
         player_x, player_y = show_mask(roi)
         player_x += 120
         player_y += 40
         cv2.putText(frame, f'Player: {player_x},{player_y}', (20, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 10, 10), 2)
         # camera resolution = 480,640
-        cv2.rectangle(frame, (120, 40), (640-120, 480-40), (255, 10, 10), 0)
+        cv2.rectangle(frame, (120, 40), (640 - 120, 480 - 40), (255, 10, 10), 0)
+        if pixel[0] == 20 and pixel[1] == 60 and pixel[2] == 80:
+            cv2.putText(frame, 'Choose the marker', (int(640 / 2) - 100, int(480 / 2)), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
+                        (0, 255, 255), 2)
+        else:
+            if start_button is not None:
+                cv2.putText(frame, 'Move the marker here to start', (int(640 / 2) - 120, int(480 / 2)), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
+                            (0, 255, 100), 2)
+                cv2.circle(frame, start_button, 20, (0, 255, 50), -1)
+                start_distance = computer_distance(player_x, player_y,start_button[0],start_button[1])
+                if start_distance < 30:
+                    start_button = None
 
         if not coin_pos[0]:
             coin_x, coin_y = draw_game(frame, 120, 40, 400, (player_x, player_y))
             coin_pos = (coin_x, coin_y)
-        cv2.putText(frame, f'Coin: {coin_pos[0]},{coin_pos[1]}', (200, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 10, 10), 2)
+        cv2.putText(frame, f'Coin: {coin_pos[0]},{coin_pos[1]}', (200, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
+                    (255, 10, 10), 2)
         cv2.circle(frame, (coin_pos[0], coin_pos[1]), 20, (255, 10, 10), -1)
-        cv2.putText(frame, '25', (coin_pos[0]-12, coin_pos[1]+7), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 1)
+        cv2.putText(frame, '25', (coin_pos[0] - 12, coin_pos[1] + 7), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 1)
 
         distance = computer_distance(player_x, player_y, coin_pos[0], coin_pos[1])
-        cv2.putText(frame, f'Distance: {distance:.0f}', (400, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5,(255, 10, 10), 2)
+        cv2.putText(frame, f'Distance: {distance:.0f}', (400, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 10, 10), 2)
+
         if distance < 30:
             coin_pos = (None, None)
 
         cv2.imshow('frame', frame)
         cv2.setMouseCallback('frame', pick_color)
 
-        k = cv2.waitKey(5) & 0xFF
+        frame_number += 1
+        if frame_number%33 == 0:
+            seconds += 1;
+
+        k = cv2.waitKey(33) & 0xFF
         if k == 27:
             break
         if k == ord("q"):
             break
+
+        cv2.putText(frame, f'Seconds: {seconds}', (400, 460), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 10, 10), 2)
 
     cv2.destroyAllWindows()
     cap.release()
