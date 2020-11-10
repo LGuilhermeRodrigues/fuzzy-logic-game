@@ -1,3 +1,5 @@
+import sys
+
 import cv2
 import numpy as np
 import random
@@ -76,7 +78,9 @@ def main():
     global pixel, image_src, upper, lower  # so we can use it in mouse callback
     frame_number = 0
     seconds = 0
-    start_button = (int(640 / 2) - 20, int(480 / 2)-40)
+    coin_left = 11
+    points = 0
+    start_button = (int(640 / 2) - 20, int(480 / 2) - 40)
     ret, frame = cap.read()
     cv2.imshow('frame', frame)
     coin_pos = (None, None)
@@ -98,16 +102,26 @@ def main():
                         (0, 255, 255), 2)
         else:
             if start_button is not None:
-                cv2.putText(frame, 'Move the marker here to start', (int(640 / 2) - 120, int(480 / 2)), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
+                cv2.putText(frame, 'Move the marker here to start', (int(640 / 2) - 120, int(480 / 2)),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5,
                             (0, 255, 100), 2)
                 cv2.circle(frame, start_button, 20, (0, 255, 50), -1)
-                start_distance = computer_distance(player_x, player_y,start_button[0],start_button[1])
+                start_distance = computer_distance(player_x, player_y, start_button[0], start_button[1])
                 if start_distance < 30:
                     start_button = None
+                    start_position = (player_x, player_y)
+                    points = 0
+                    seconds = 0
+                    coin_left = 10
+            else:
+                # game has started
+                player_position = (player_x, player_y)
 
+        coin_found = False
         if not coin_pos[0]:
             coin_x, coin_y = draw_game(frame, 120, 40, 400, (player_x, player_y))
             coin_pos = (coin_x, coin_y)
+            coin_found = True
         cv2.putText(frame, f'Coin: {coin_pos[0]},{coin_pos[1]}', (200, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
                     (255, 10, 10), 2)
         cv2.circle(frame, (coin_pos[0], coin_pos[1]), 20, (255, 10, 10), -1)
@@ -119,12 +133,25 @@ def main():
         if distance < 30:
             coin_pos = (None, None)
 
+        frame_number += 1
+        if frame_number % 3 == 0:
+            seconds += 0.1
+
+        cv2.putText(frame, f'Seconds: {seconds * 1.0:.1f}', (400, 460), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 10, 10), 2)
+
+        if coin_found:
+            coin_left -= 1
+        if coin_left == 0:
+            points_final = points
+        if coin_left <= 0:
+            cv2.putText(frame, f'Points: {points_final}', (int(640 / 2) - 30, int(480 / 2)),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5,
+                        (0, 255, 255), 2)
+        cv2.putText(frame, f'Coins Left: {coin_left}', (230, 460), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 10, 10), 2)
+        cv2.putText(frame, f'Points: {points}', (90, 460), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 10, 10), 2)
+
         cv2.imshow('frame', frame)
         cv2.setMouseCallback('frame', pick_color)
-
-        frame_number += 1
-        if frame_number%33 == 0:
-            seconds += 1;
 
         k = cv2.waitKey(33) & 0xFF
         if k == 27:
@@ -132,11 +159,10 @@ def main():
         if k == ord("q"):
             break
 
-        cv2.putText(frame, f'Seconds: {seconds}', (400, 460), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 10, 10), 2)
-
     cv2.destroyAllWindows()
     cap.release()
 
 
 if __name__ == '__main__':
     main()
+    sys.exit()
