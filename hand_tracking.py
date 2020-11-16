@@ -73,13 +73,23 @@ def computer_distance(player_x, player_y, coin_x, coin_y):
     return distance
 
 
+def calculate_points(seconds):
+    if seconds < 4:
+        return 100
+    if seconds < 8:
+        return 50
+    return 25
+
+
 def main():
     cap = cv2.VideoCapture(0)
     global pixel, image_src, upper, lower  # so we can use it in mouse callback
     frame_number = 0
+    game_start = False
     seconds = 0
     coin_left = 11
     points = 0
+    coin_value = 25
     start_button = (int(640 / 2) - 20, int(480 / 2) - 40)
     ret, frame = cap.read()
     cv2.imshow('frame', frame)
@@ -113,6 +123,8 @@ def main():
                     points = 0
                     seconds = 0
                     coin_left = 10
+                    coin_value = 25
+                    game_start = True
             else:
                 # game has started
                 player_position = (player_x, player_y)
@@ -125,7 +137,11 @@ def main():
         cv2.putText(frame, f'Coin: {coin_pos[0]},{coin_pos[1]}', (200, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
                     (255, 10, 10), 2)
         cv2.circle(frame, (coin_pos[0], coin_pos[1]), 20, (255, 10, 10), -1)
-        cv2.putText(frame, '25', (coin_pos[0] - 12, coin_pos[1] + 7), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 1)
+        if coin_value == 100:
+            cv2.putText(frame, str(coin_value), (coin_pos[0] - 15, coin_pos[1] + 7), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
+                        (255, 255, 255), 1)
+        else:
+            cv2.putText(frame, str(coin_value), (coin_pos[0] - 12, coin_pos[1] + 7), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 1)
 
         distance = computer_distance(player_x, player_y, coin_pos[0], coin_pos[1])
         cv2.putText(frame, f'Distance: {distance:.0f}', (400, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 10, 10), 2)
@@ -140,7 +156,11 @@ def main():
         cv2.putText(frame, f'Seconds: {seconds * 1.0:.1f}', (400, 460), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 10, 10), 2)
 
         if coin_found:
+            seconds = 0
             coin_left -= 1
+            if game_start:
+                points += coin_value
+                coin_value = calculate_points(seconds)
         if coin_left == 0:
             points_final = points
         if coin_left <= 0:
