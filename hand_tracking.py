@@ -73,11 +73,13 @@ def computer_distance(player_x, player_y, coin_x, coin_y):
     return distance
 
 
-def calculate_points(seconds):
-    if seconds < 4:
+def calculate_points(time_waiting, time_execution):
+    if time_execution < 4:
         return 100
-    if seconds < 8:
+    if time_execution < 8:
         return 50
+    if time_waiting < 4:
+        return 55
     return 25
 
 
@@ -85,8 +87,11 @@ def main():
     cap = cv2.VideoCapture(0)
     global pixel, image_src, upper, lower  # so we can use it in mouse callback
     frame_number = 0
+    points_final = 0
     game_start = False
-    seconds = 0
+    time_execution = 0
+    start_position = (0, 0)
+    time_waiting = 0
     coin_left = 11
     points = 0
     coin_value = 25
@@ -121,7 +126,8 @@ def main():
                     start_button = None
                     start_position = (player_x, player_y)
                     points = 0
-                    seconds = 0
+                    time_execution = 0
+                    time_waiting = 0
                     coin_left = 10
                     coin_value = 25
                     game_start = True
@@ -151,16 +157,21 @@ def main():
 
         frame_number += 1
         if frame_number % 3 == 0:
-            seconds += 0.1
+            if computer_distance(player_x, player_y, start_position[0], start_position[1]) < 30:
+                time_waiting += 0.1
+            else:
+                time_execution += 0.1
 
-        cv2.putText(frame, f'Seconds: {seconds * 1.0:.1f}', (400, 460), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 10, 10), 2)
+        cv2.putText(frame, f'Seconds: {time_waiting * 1.0:.1f} + {time_execution * 1.0:.1f}', (400, 460), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 10, 10), 2)
 
         if coin_found:
-            seconds = 0
+            start_position = (player_x, player_y)
             coin_left -= 1
             if game_start:
                 points += coin_value
-                coin_value = calculate_points(seconds)
+                coin_value = calculate_points(time_waiting, time_execution)
+            time_waiting = 0
+            time_execution = 0
         if coin_left == 0:
             points_final = points
         if coin_left <= 0:
