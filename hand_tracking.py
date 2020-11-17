@@ -62,8 +62,6 @@ def draw_game(frame, start_x, start_y, num_pixels, player_pos):
         game_x = random.randint(interval_x[0], interval_x[1])
         game_y = random.randint(interval_y[0], interval_y[1])
 
-    print('teste ', game_x, ',', game_y)
-
     # cv2.rectangle(frame, (start_x+border, start_y + border), (start_x+num_pixels-border, start_y + num_pixels - border), (255, 10, 10), 0)
     return game_x, game_y
 
@@ -73,20 +71,38 @@ def computer_distance(player_x, player_y, coin_x, coin_y):
     return distance
 
 
-def calculate_points(time_waiting, time_execution):
-    if time_execution < 4:
+def calculate_stability(frames_per_second):
+    # print(frames_per_second)
+    distances = []
+    p = frames_per_second.pop(0)
+    for position in frames_per_second:
+        distances.append(computer_distance(p[0], p[1], position[0], position[1]))
+        p = position
+    # print(f'{[int(x) for x in distances]} {int(max(distances))}-{int(min(distances))} = {int(max(distances))-int(min(distances))}')
+    return max(distances)-min(distances)
+
+
+def calculate_points(time_waiting, time_execution, frames_per_second):
+    stability = calculate_stability(frames_per_second)
+    if stability < 10:
         return 100
-    if time_execution < 8:
+    if stability < 20:
         return 50
-    if time_waiting < 4:
-        return 55
     return 25
+    # if time_execution < 4:
+    #     return 100
+    # if time_execution < 8:
+    #     return 50
+    # if time_waiting < 4:
+    #     return 55
+    # return 25
 
 
 def main():
     cap = cv2.VideoCapture(0)
     global pixel, image_src, upper, lower  # so we can use it in mouse callback
     frame_number = 0
+    frames_per_second = []
     points_final = 0
     game_start = False
     time_execution = 0
@@ -131,6 +147,7 @@ def main():
                     coin_left = 10
                     coin_value = 25
                     game_start = True
+                    frames_per_second = []
             else:
                 # game has started
                 player_position = (player_x, player_y)
@@ -161,6 +178,8 @@ def main():
                 time_waiting += 0.1
             else:
                 time_execution += 0.1
+                if frame_number % 3 == 0:
+                    frames_per_second.append((player_x, player_y))
 
         cv2.putText(frame, f'Seconds: {time_waiting * 1.0:.1f} + {time_execution * 1.0:.1f}', (400, 460), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 10, 10), 2)
 
@@ -169,9 +188,10 @@ def main():
             coin_left -= 1
             if game_start:
                 points += coin_value
-                coin_value = calculate_points(time_waiting, time_execution)
+                coin_value = calculate_points(time_waiting, time_execution, frames_per_second)
             time_waiting = 0
             time_execution = 0
+            frames_per_second = []
         if coin_left == 0:
             points_final = points
         if coin_left <= 0:
