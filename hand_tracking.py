@@ -5,6 +5,8 @@ import numpy as np
 import random
 import math
 
+import fuzzy
+
 image_src = None
 pixel = (20, 60, 80)  # some random default
 upper = (20, 60, 80)
@@ -84,11 +86,12 @@ def calculate_stability(frames_per_second):
 
 def calculate_points(time_waiting, time_execution, frames_per_second):
     stability = calculate_stability(frames_per_second)
-    if stability < 10:
-        return 100
-    if stability < 20:
-        return 50
-    return 25
+    return fuzzy.calculate_points(time_waiting, time_execution, stability)
+    # if stability < 10:
+    #     return 100
+    # if stability < 20:
+    #     return 50
+    # return 25
     # if time_execution < 4:
     #     return 100
     # if time_execution < 8:
